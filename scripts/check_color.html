@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>deck 配色校验</title></head>
+<body>
+<!--
+  用法：
+    1. 把待校验 deck 复制为同目录下 deck_raw.html
+    2. chrome.exe --headless=new --disable-gpu --no-sandbox --allow-file-access-from-files
+         --window-size=1600,900 --virtual-time-budget=9000
+         --dump-dom "file:///目录/check_color.html" | sed -n '/<pre/,/<\/pre>/p'
+  检查项：
+    ① :root 是否真的被解析（骨架结构损坏时会被整块吞掉 → 所有 var() 失效）
+    ② 每页 tone 实际渲染色（确认 data-tone 生效、六色可区分）
+    ③ 蓝色系检测（用户不接受蓝色主题）
+    ④ WCAG 对比度：最弱文字 vs 画布底，须 ≥ 4.5:1
+-->
+<iframe id="fr" src="deck_raw.html" style="position:absolute;left:-9999px;width:1600px;height:900px;border:0"></iframe>
+<div id="out">running…</div>
+<script>
+document.getElementById('fr').addEventListener('load', function(){
+  setTimeout(function(){
+    var D=this.contentDocument, W=this.contentWindow, L=[], bad=0;
+    var ss=D.styleSheets[0], rootOK=false, toneOK=false;
+    for(var i=0;i<ss.cssRules.length;i++){
+      var sel=ss.cssRules[i].selectorText||'';
+      if(sel===':root') rootOK=true;
+      if(/\[data-tone=/.test(sel)) toneOK=true;
+    }
+    var bgv=W.getComputedStyle(D.documentElement).getPropertyValue('--bg').trim();
+    if(!rootOK){bad++; L.push('✗ 致命：:root 规则未被解析（骨架结构损坏？）→ 全部 var() 失效');}
+    else L.push('✓ :root 已解析   --bg='+(bgv||'(空)'));
+    if(!bgv && rootOK){bad++; L.push('✗ --bg 求值为空');}
+    if(!toneOK) L.push('· 提示：未使用 data-tone 分色');
+
+    function rgb(s){var m=String(s).match(/(\d+(?:\.\d+)?)/g);return m?m.slice(0,3).map(Number):[0,0,0];}
+    function lum(c){var a=c.map(function(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);});
+      return 0.2126*a[0]+0.7152*a[1]+0.0722*a[2];}
+    function ratio(f,b){var A=lum(rgb(f)),B=lum(rgb(b));
+      return (Math.max(A,B)+0.05)/(Math.min(A,B)+0.05);}
+    function isBlue(c){var r=c[0],g=c[1],b=c[2],mx=Math.max(r,g,b);
+      return mx>0 && b===mx && (b-r)>25 && (b-g)>10;}
+    function hex(c){return '#'+c.map(function(v){return ('0'+Math.round(v).toString(16)).slice(-2);}).join('');}
+
+    var bg=W.getComputedStyle(D.getElementById('deck')).backgroundColor;
+    var seen={}, minCr=99, minWho='';
+    L.push('画布底色 '+bg.replace(/\s/g,''));
+    L.push('');
+    [].slice.call(D.querySelectorAll('.slide')).forEach(function(s,idx){
+      var tone=s.getAttribute('data-tone')||'(none)';
+      var probe=s.querySelector('h2 .bar')||s.querySelector('.eyebrow .sec');
+      var col='n/a', c=[0,0,0], blue=false;
+      if(probe){var cs=W.getComputedStyle(probe);
+        col = cs.backgroundColor!=='rgba(0, 0, 0, 0)' ? cs.backgroundColor : cs.color;
+        c=rgb(col); blue=isBlue(c); if(blue)bad++;}
+      if(!seen[tone])seen[tone]=hex(c);
+      var weak=s.querySelector('.card .d')||s.querySelector('td')||s.querySelector('.sub');
+      var cr=null, crBad=false;
+      if(weak){cr=ratio(W.getComputedStyle(weak).color,bg); crBad=cr<4.5; if(crBad)bad++;
+        if(cr<minCr){minCr=cr;minWho='P'+(idx+1)+' .'+(weak.className||weak.tagName);}}
+      L.push('P'+String(idx+1).padStart(2,'0')+' tone='+tone.padEnd(8)+' 强调='+hex(c).padEnd(8)
+        +(blue?'✗蓝色系':'✓无蓝 ')
+        +(cr!==null?'  弱文字对比度='+cr.toFixed(2)+':1'+(crBad?' ✗<4.5':' ✓'):''));
+    });
+    L.push('');
+    L.push('=== 各 tone 实际渲染色 ===');
+    Object.keys(seen).forEach(function(k){L.push('  '+k.padEnd(9)+seen[k]);});
+    L.push('');
+    L.push('最弱对比度 '+minCr.toFixed(2)+':1  @ '+minWho);
+    L.push('==== 配色异常: '+bad+' ====');
+    var pre=document.createElement('pre');
+    pre.style.cssText='font:13px monospace;background:#fff;color:#000;padding:20px';
+    pre.textContent=L.join('\n');
+    document.body.innerHTML=''; document.body.appendChild(pre);
+  }.bind(this),1800);
+});
+</script>
+</body></html>

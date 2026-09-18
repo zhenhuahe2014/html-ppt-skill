@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>演示标题 · 日期（图文演示版 __VER__）</title>
+<meta name="deck-version" content="__VER__">
+<meta name="deck-updated" content="__TIME__">
+<style>
+/* 全局色板。--track=条形图轨道（比面板亮，保证边界可见）；
+   --tone=页面主题色（默认金），由 section[data-tone] 按板块覆盖。
+   注意：注释只能写在声明块【外面】，块内写中文注释会让整块被解析器丢弃。 */
+:root{
+  --bg:#0b0b0d; --panel:#151518; --panel2:#1c1c20; --line:#2c2c33;
+  --text:#f2f2f4; --text2:#c6c6d0; --muted:#a5a5b2;
+  --accent:#ffb74d; --accent-dim:#6b4d24;
+  --up:#ff5252; --down:#3ddc84; --chip:#26262c;
+  --track:#22222a;
+  --tone:#ffb74d; --tone-dim:#2a2418; --tone-line:#4a3618;
+}
+/* ===== 板块分类色（全部避开蓝色系 200–260 色相）=====
+   policy 政策=金 / model 模型=青绿 / chip 算力=橙
+   capital 资本=玫红 / gov 治理=紫红 / world 国际=黄绿        */
+.slide[data-tone="policy"] {--tone:#ffb74d;--tone-dim:#2a2418;--tone-line:#5c421c}
+.slide[data-tone="model"]  {--tone:#2ee6c8;--tone-dim:#123330;--tone-line:#1d6157}
+.slide[data-tone="chip"]   {--tone:#ff8a65;--tone-dim:#33201a;--tone-line:#63382c}
+.slide[data-tone="capital"]{--tone:#ff5c8a;--tone-dim:#331825;--tone-line:#63273a}
+.slide[data-tone="gov"]    {--tone:#d16ee0;--tone-dim:#2c1a30;--tone-line:#532a5a}
+.slide[data-tone="world"]  {--tone:#a8d84a;--tone-dim:#25301a;--tone-line:#42562a}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:19px}
+body{background:#000;color:var(--text);overflow:hidden;
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif;line-height:1.6}
+
+/* ===== 固定 16:9 画布，整体等比缩放 ===== */
+#stage{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden}
+#deck{position:relative;width:1600px;height:900px;flex:none;transform-origin:center center;background:var(--bg);overflow:hidden}
+
+/* ===== 页面骨架：eyebrow + wrap(zin 自动缩放填满) ===== */
+/* 上下居中：padding-top == padding-bottom（相对 900px 画布几何中心严格对称）
+   左右居中：padding-left == padding-right 且 .wrap 用 justify-content:center */
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:5.5rem 4.5rem 5.5rem;opacity:0;pointer-events:none;transition:opacity .32s ease}
+.slide.active{opacity:1;pointer-events:auto}
+.slide::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at 12% 0%,#1a1a20 0%,transparent 62%);pointer-events:none}
+.slide>*{position:relative}
+.wrap{flex:1 1 auto;min-height:0;position:relative;display:flex;
+  align-items:center;justify-content:center}
+/* .zin 用 transform:scale(k) 居中缩放：宽度设为 100/k % 后放大，
+   渲染宽度恰好 = 容器宽，且 origin 在中心 → 恒左右居中、绝不横向溢出 */
+.zin{width:100%;flex:none;transform-origin:center center}
+
+.eyebrow{position:absolute;top:2.1rem;left:4.5rem;right:4.5rem;display:flex;
+  justify-content:space-between;align-items:center;font-size:.85rem;color:var(--muted);letter-spacing:1px}
+.eyebrow .sec{color:var(--tone);font-weight:600}
+h1{font-size:3rem;line-height:1.25;font-weight:800;letter-spacing:1px}
+h2{font-size:2rem;font-weight:750;line-height:1.3;color:#fff;margin-bottom:.45rem}
+h2 .bar{display:inline-block;width:.32rem;height:1.5rem;background:var(--tone);vertical-align:-.22rem;margin-right:.7rem;border-radius:2px}
+.sub{font-size:1rem;color:var(--muted);font-weight:400;padding-left:1.05rem;margin-bottom:1.3rem}
+h3{font-size:1.12rem;color:var(--tone);font-weight:650;margin:1rem 0 .45rem}
+.up{color:var(--up);font-weight:700}
+.down{color:var(--down);font-weight:700}
+b,strong{color:#fff;font-weight:650}
+ul{margin:.35rem 0 .35rem 1.5rem}
+li{margin:.4rem 0;font-size:1.02rem}
+li::marker{color:var(--tone)}
+li b{color:var(--tone)}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:1rem}
+th{background:var(--panel2);color:var(--tone);font-weight:650;text-align:left;
+  padding:.55rem .85rem;border-bottom:1px solid var(--line);font-size:.92rem;letter-spacing:.5px;white-space:nowrap}
+td{padding:.5rem .85rem;border-bottom:1px solid #232329}
+td:first-child{white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#1b1b21}
+.num{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
+
+/* 卡片 */
+.grid{display:grid;gap:.9rem}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:.7rem;padding:.9rem 1.05rem}
+.card.hl{border-color:var(--tone-line);background:linear-gradient(160deg,var(--tone-dim),var(--panel))}
+.card .k{font-size:.84rem;color:var(--muted);margin-bottom:.2rem}
+.card .v{font-size:1.75rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15}
+.card .d{font-size:.86rem;color:var(--muted);margin-top:.18rem}
+.card h4{font-size:1.05rem;color:var(--tone);margin-bottom:.3rem;font-weight:650}
+.card p,.card li{font-size:.93rem}
+
+/* ===== 图表：双向条形图（零轴居中，涨右红跌左绿） ===== */
+.bars{margin:.6rem 0}
+.bar{display:grid;grid-template-columns:6.6rem 1fr 4.6rem;align-items:center;gap:.65rem;margin:.28rem 0;font-size:.95rem}
+.bar .lb{color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .tr{height:1.35rem;background:var(--track);border-radius:.2rem;position:relative}
+.bar .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:#3d3d46}
+.bar .fl{position:absolute;top:0;bottom:0;border-radius:.15rem}
+.bar .fl.u{left:50%;background:linear-gradient(90deg,#7a2424,var(--up))}
+.bar .fl.d{right:50%;background:linear-gradient(270deg,#165c39,var(--down))}
+.bar .vl{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+
+/* ===== 图表：单向条形图 ===== */
+.sbars{margin:.5rem 0}
+.sbar{display:grid;grid-template-columns:8.5rem 1fr 3.6rem;align-items:center;gap:.65rem;margin:.3rem 0;font-size:.95rem}
+.sbar .lb{color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbar .tr{height:1.3rem;background:var(--track);border-radius:.2rem;overflow:hidden}
+.sbar .fl{display:block;height:100%;border-radius:.2rem;background:linear-gradient(90deg,var(--tone-line),var(--tone))}
+.sbar .fl.g{background:linear-gradient(90deg,#165c39,var(--down))}
+.sbar .fl.a{background:linear-gradient(90deg,var(--accent-dim),var(--accent))}
+.sbar .vl{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+
+/* ===== 图表：环形图 ===== */
+.ring{width:11rem;height:11rem;flex:none}
+.ring text{fill:#fff;font-family:ui-monospace,Consolas,monospace}
+.ringwrap{display:flex;align-items:center;gap:1.6rem}
+.ringlegend{font-size:1rem}
+.ringlegend div{margin:.4rem 0;display:flex;align-items:center;gap:.5rem}
+.sw{width:.85rem;height:.85rem;border-radius:.2rem;flex:none}
+
+/* ===== 图表：投票方块阵列 ===== */
+.votes{display:flex;gap:.45rem;margin:.7rem 0}
+.vote{width:2.4rem;height:3.2rem;border-radius:.28rem;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:.86rem;
+  background:#16161a;color:var(--muted);flex-direction:column;line-height:1.15}
+.vote.hold{background:linear-gradient(160deg,var(--tone-dim),var(--panel));border-color:var(--tone-line);color:var(--tone)}
+.vote.hike{background:linear-gradient(160deg,#3a1616,#16161a);border-color:#6b2424;color:var(--up)}
+.vote small{font-size:.66rem;opacity:.75}
+
+/* ===== 图表：时间轴 ===== */
+.tl{display:flex;align-items:flex-start;margin:1rem 0 .6rem;position:relative}
+.tli{flex:1;text-align:center;position:relative}
+.tli::after{content:"";position:absolute;top:1.05rem;left:50%;right:-50%;height:2px;background:var(--line);z-index:0}
+.tli:last-child::after{display:none}
+.tli .dot{width:2.1rem;height:2.1rem;border-radius:50%;background:var(--tone);color:#111;
+  font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;
+  margin:0 auto .5rem;position:relative;z-index:1;box-shadow:0 0 0 4px #0b0b0d}
+.tli .tt{font-size:1.05rem;font-weight:700;color:var(--tone);font-variant-numeric:tabular-nums}
+.tli .td{font-size:.88rem;color:var(--muted);margin-top:.15rem;line-height:1.35}
+
+/* ===== 图表：阶梯路径图 ===== */
+.stepsvg{width:100%;height:13rem;display:block}
+
+/* ===== 图表：交易时段甘特 ===== */
+.gantt{width:100%;height:auto;aspect-ratio:600/150;display:block;margin:.4rem 0}
+
+/* ===== 提示条 ===== */
+.note{border-left:3px solid var(--tone);background:var(--panel);padding:.7rem 1.05rem;
+  border-radius:0 .5rem .5rem 0;font-size:.98rem;margin-top:1.3rem}
+.note.warn{border-left-color:#ff8a65}
+.note .t{color:var(--tone);font-weight:700;margin-right:.4rem}
+.note.warn .t{color:#ff8a65}
+
+/* ===== 封面：水平居中 + 垂直居中 ===== */
+.cover .zin{text-align:center}
+.cover h1{margin-bottom:1.2rem}
+.cover .bigquote{display:inline-block;border-left:4px solid var(--accent);padding:.25rem 0 .25rem 1.1rem;text-align:left}
+.cmeta{font-size:1.12rem;color:var(--muted);line-height:2}
+.cmeta b{color:var(--accent)}
+.tzbar{margin-top:1.4rem;padding-top:1rem;border-top:1px dashed var(--line);font-size:.93rem;color:var(--muted);width:100%}
+.tzbar code{background:var(--chip);padding:.15rem .5rem;border-radius:.3rem;color:var(--text);font-size:.88rem}
+.bigquote{margin-top:1.5rem;font-size:1.25rem;color:var(--accent);font-weight:650;border-left:4px solid var(--accent);padding-left:1rem}
+
+/* ===== 导航 ===== */
+#nav{position:absolute;bottom:1.5rem;left:4.5rem;right:4.5rem;display:flex;align-items:center;
+  gap:1rem;font-size:.85rem;color:var(--muted);z-index:20}
+#bar{flex:1;height:3px;background:#212128;border-radius:2px;overflow:hidden}
+#barin{height:100%;width:0;background:var(--accent);transition:width .3s ease}
+.btn{background:var(--chip);border:1px solid var(--line);color:var(--text);width:2.1rem;height:2.1rem;
+  border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;
+  user-select:none;transition:.15s;flex:none}
+.btn:hover{background:var(--accent);color:#111;border-color:var(--accent)}
+#pg{font-variant-numeric:tabular-nums;min-width:3.6rem;text-align:center}
+#ver{background:var(--accent-dim);color:var(--accent);border:1px solid #4a3618;border-radius:.9rem;
+  padding:.1rem .6rem;font-size:.78rem;font-variant-numeric:tabular-nums;letter-spacing:.5px;flex:none}
+.vchip{display:inline-block;background:var(--accent-dim);color:var(--accent);border:1px solid #4a3618;
+  border-radius:1rem;padding:.15rem .75rem;font-size:.9rem;font-weight:700;letter-spacing:1px;
+  vertical-align:.35rem;margin-left:.8rem}
+#hint{font-size:.78rem;color:#85858f;white-space:nowrap}
+#ovl{position:absolute;inset:0;background:rgba(0,0,0,.94);z-index:50;display:none;
+  grid-template-columns:repeat(5,1fr);gap:.8rem;padding:2.5rem;align-content:start;overflow:auto}
+#ovl.on{display:grid}
+#ovl .mini{border:1px solid var(--line);border-radius:.5rem;padding:.6rem;font-size:.72rem;
+  color:var(--muted);cursor:pointer;background:#111114;aspect-ratio:16/9;overflow:hidden}
+#ovl .mini:hover,#ovl .mini.cur{border-color:var(--accent);color:var(--text)}
+#ovl .mini b{display:block;color:var(--accent);font-size:.85rem;margin-bottom:.2rem}
+
+/* GOTO:CSS 起 —— 指定页码跳转（G 键 / 点击底部页码 / 直接键数字） */
+#pg{cursor:pointer;border-radius:.4rem;padding:.05rem .35rem;transition:.15s;border:1px solid transparent}
+#pg:hover{color:var(--accent);background:var(--chip);border-color:var(--accent-dim)}
+#goto{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.84)}
+#goto.on{display:flex}
+#gbox{width:48rem;background:var(--panel);border:1px solid var(--accent-dim);border-radius:1rem;
+  padding:1.5rem 1.8rem 1.3rem;box-shadow:0 1.6rem 4rem rgba(0,0,0,.65)}
+#gtop{display:flex;justify-content:space-between;align-items:baseline;font-size:.95rem;color:var(--muted);margin-bottom:.9rem}
+#gtop b{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+#gin{display:block;width:100%;background:#0e0e11;border:1px solid var(--line);border-radius:.6rem;
+  color:var(--text);font-size:2.2rem;font-weight:800;text-align:center;padding:.6rem 1rem;outline:none;
+  font-family:inherit;font-variant-numeric:tabular-nums;letter-spacing:3px;transition:.15s}
+#gin:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+#gpg{display:grid;grid-template-columns:repeat(10,1fr);gap:.45rem;margin-top:1.1rem}
+#gpg .gn{background:#111114;border:1px solid var(--line);border-radius:.4rem;padding:.4rem 0;
+  text-align:center;font-size:.98rem;color:var(--text2);cursor:pointer;user-select:none;
+  font-variant-numeric:tabular-nums;transition:.12s}
+#gpg .gn:hover{background:var(--accent);color:#111;border-color:var(--accent);font-weight:800}
+#gpg .gn.cur{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:800}
+#gprev{margin-top:1rem;min-height:1.6rem;text-align:center;font-size:1.05rem;color:var(--muted)}
+#gprev b{color:var(--tone);font-weight:700;font-variant-numeric:tabular-nums;margin-right:.45rem}
+#ghint{margin-top:.6rem;text-align:center;font-size:.82rem;color:#85858f;line-height:1.7}
+#ghint code{background:var(--chip);padding:.1rem .45rem;border-radius:.3rem;color:var(--text);font-size:.8rem}
+#gquick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;display:none;
+  background:rgba(0,0,0,.92);border:1px solid var(--accent);border-radius:.9rem;padding:1rem 2.2rem;
+  text-align:center;box-shadow:0 1rem 3rem rgba(0,0,0,.7)}
+#gquick.on{display:block}
+#gquick .q{font-size:3.4rem;font-weight:800;color:var(--accent);letter-spacing:6px;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+#gquick small{display:block;font-size:.85rem;color:var(--muted);letter-spacing:1px;margin-top:.2rem}
+/* GOTO:CSS 止 */
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="deck">
+
+<!-- ========= 1 封面（.cover：水平 + 垂直居中）========= -->
+<section class="slide cover">
+  <div class="eyebrow"><span class="sec">主题分类</span><span>日期 · __VER__</span></div>
+  <div class="wrap"><div class="zin" data-cap="1.12">
+    <h1>演示主标题<span class="vchip">__VER__</span></h1>
+    <div class="cmeta">副标题 / 覆盖范围<br>报告日期：<b>YYYY 年 M 月 D 日</b>　生成：北京时间 HH:MM</div>
+    <div class="bigquote">一句话核心结论</div>
+  </div></div>
+</section>
+
+<!-- ========= 2 图表页（双向条形图 + 指标卡）========= -->
+<section class="slide">
+  <div class="eyebrow"><span class="sec">一 · 章节名</span><span>数据来源说明</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>页面标题：一句结论</h2>
+    <div class="sub">零轴居中 · 右侧红为涨 · 左侧绿为跌</div>
+    <div class="bars" style="margin:0">
+      <!-- 宽度换算：width = |值| / max × 50%（本例 max=4.00% → 1% ≈ 12.5%） -->
+      <div class="bar"><span class="lb">项目A</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:50%"></i></span><span class="vl up">+4.00%</span></div>
+      <div class="bar"><span class="lb">项目B</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:25%"></i></span><span class="vl up">+2.00%</span></div>
+      <div class="bar"><span class="lb">项目C</span><span class="tr"><i class="mid"></i><i class="fl d" style="width:15%"></i></span><span class="vl down">-1.20%</span></div>
+    </div>
+    <div class="grid g4" style="margin-top:1.2rem">
+      <div class="card"><div class="k">指标1</div><div class="v up">+1.23%</div><div class="d">说明</div></div>
+      <div class="card"><div class="k">指标2</div><div class="v down">-0.45%</div><div class="d">说明</div></div>
+      <div class="card hl"><div class="k">重点指标</div><div class="v">数值</div><div class="d">说明</div></div>
+      <div class="card"><div class="k">指标4</div><div class="v">数值</div><div class="d">说明</div></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ========= 3 表格页（≤7 行，首列 nowrap）========= -->
+<section class="slide">
+  <div class="eyebrow"><span class="sec">二 · 章节名</span><span>口径说明</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>表格标题</h2>
+    <div class="sub">单位 / 口径</div>
+    <table>
+      <thead><tr><th>名称</th><th>最新值</th><th>涨跌</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>项目一</td><td class="num">1,234.56</td><td class="up">+1.23%</td><td>要点</td></tr>
+        <tr><td>项目二</td><td class="num">987.65</td><td class="down">-0.45%</td><td>要点</td></tr>
+        <tr><td>项目三</td><td class="num">456.78</td><td class="up">+0.67%</td><td>要点</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><span class="t">💡</span>结论性提示条。</div>
+  </div></div>
+</section>
+
+</div>
+<div id="nav">
+  <div class="btn" id="prev">‹</div>
+  <div class="btn" id="next">›</div>
+  <div id="bar"><div id="barin"></div></div>
+  <div id="pg">1 / 3</div>
+  <div id="ver">__VER__</div>
+</div>
+<div id="ovl"></div>
+<!-- GOTO:HTML 起 -->
+<div id="goto"><div id="gbox">
+  <div id="gtop"><span>跳转到指定页 · 共 <b id="gtot">1</b> 页</span><span>← → 微调　Enter 跳转　Esc 关闭</span></div>
+  <input id="gin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="输入页码后按 Enter">
+  <div id="gpg"></div>
+  <div id="gprev"></div>
+  <div id="ghint">快捷键　<code>G</code> 打开跳页　<code>0-9</code> 直接输页码　<code>O</code> 概览　<code>F</code> 全屏　<code>Home/End</code> 首末页</div>
+</div></div>
+<div id="gquick"><div class="q">1</div><small>继续输入多位页码 · Enter 立即跳转</small></div>
+<!-- GOTO:HTML 止 -->
+</div>
+<script>
+(function(){
+  var deck=document.getElementById('deck');
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var i=0,n=slides.length;
+  var barin=document.getElementById('barin'),pg=document.getElementById('pg'),ovl=document.getElementById('ovl');
+
+  /* 画布整体等比缩放 */
+  function fitDeck(){
+    var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    deck.style.transform='scale('+s+')';
+  }
+
+  /* 每页内容自动缩放填满 —— 居中 scale 方案（上下/左右均居中，绝不裁切）
+     原理：.zin 置于 .wrap(flex,align+justify:center) 中；
+     把 .zin 的布局宽度设为 100/k %，再 transform:scale(k)（origin:center）
+     → 渲染宽度恒 = 容器宽（左右居中），渲染高度 = 布局高 × k。
+     迭代求解 k 使渲染高 = 可用高，上限 data-cap（默认 1.24）。
+     所有测量用 getBoundingClientRect 并除以 deck 缩放归一回画布坐标。 */
+  function applyK(zin,k){
+    if(k>0.997&&k<1.003){ zin.style.width='100%'; zin.style.transform='none'; return 1; }
+    zin.style.width=(100/k)+'%';
+    zin.style.transform='scale('+k+')';
+    return k;
+  }
+  function fitSlide(s){
+    var zin=s.querySelector('.zin'), wrap=s.querySelector('.wrap');
+    if(!zin||!wrap)return;
+    zin.style.width='100%'; zin.style.transform='none';
+    var dscale=deck.getBoundingClientRect().height/900;
+    if(!dscale||!isFinite(dscale))dscale=1;
+    var ah=wrap.clientHeight;
+    if(!ah)return;
+    var cap=parseFloat(zin.getAttribute('data-cap')||'1.24');
+    var k=1;
+    for(var t=0;t<6;t++){                    /* 收敛迭代：以实际渲染高为准 */
+      var hr=zin.getBoundingClientRect().height/dscale;
+      if(!hr||!isFinite(hr))return;
+      var kn=k*ah/hr;
+      if(!isFinite(kn)||kn<=0)return;
+      kn=Math.max(0.45,Math.min(kn,cap));
+      if(Math.abs(kn-k)<0.004){k=kn;break;}
+      k=kn; applyK(zin,k);
+    }
+    /* 收尾保险：若仍有溢出，一次性压到恰好容纳 */
+    var hf=zin.getBoundingClientRect().height/dscale;
+    if(hf>ah*1.004&&hf>0){ k=Math.max(0.45,k*ah/hf); applyK(zin,k); }
+  }
+  function fitAll(){
+    fitDeck();
+    slides.forEach(fitSlide);
+  }
+
+  slides.forEach(function(s,idx){
+    var d=document.createElement('div');d.className='mini';
+    var t=s.querySelector('h2')||s.querySelector('h1'),sub=s.querySelector('.sub');
+    d.innerHTML='<b>'+(idx+1)+'</b>'+((t&&t.textContent.trim())||'封面').slice(0,22)
+      +(sub?'<br><span style="opacity:.7">'+sub.textContent.trim().slice(0,26)+'</span>':'');
+    d.onclick=function(){go(idx);toggleOvl(false);};
+    ovl.appendChild(d);
+  });
+
+  function go(k){
+    i=Math.max(0,Math.min(n-1,k));
+    slides.forEach(function(s,idx){s.classList.toggle('active',idx===i);});
+    barin.style.width=((i+1)/n*100)+'%';
+    pg.textContent=(i+1)+' / '+n;
+    [].slice.call(ovl.children).forEach(function(m,idx){m.classList.toggle('cur',idx===i);});
+    if(location.hash!=='#'+(i+1))history.replaceState(null,'','#'+(i+1));
+  }
+  function toggleOvl(on){ovl.classList.toggle('on',(on===undefined)?!ovl.classList.contains('on'):on);}
+
+  /* GOTO:JS 起 —— 指定页码跳转（G 键 / 点击底部页码 / 直接键数字） */
+  var gto=document.getElementById('goto'),gin=document.getElementById('gin'),
+      gpg=document.getElementById('gpg'),gprev=document.getElementById('gprev'),
+      gqt=document.getElementById('gquick'),gq=document.querySelector('#gquick .q'),
+      gtot=document.getElementById('gtot');
+  var titles=slides.map(function(s){
+    var t=s.querySelector('h2')||s.querySelector('h1');
+    return t?(t.textContent.trim().replace(/\s+/g,' ').slice(0,32)):'封面';
+  });
+  gtot.textContent=n;
+  slides.forEach(function(s,idx){
+    var d=document.createElement('div');d.className='gn';d.textContent=(idx+1);
+    d.title=(idx+1)+' · '+titles[idx];
+    d.onclick=function(e){e.stopPropagation();go(idx);toggleGoto(false);};
+    gpg.appendChild(d);
+  });
+  function preview(v){
+    var k=Math.max(1,Math.min(n,parseInt(v,10)||1));
+    gprev.innerHTML='<b>'+k+'</b>'+titles[k-1];
+    [].slice.call(gpg.children).forEach(function(m,idx){m.classList.toggle('cur',idx===k-1);});
+  }
+  function toggleGoto(on){
+    var will=(on===undefined)?!gto.classList.contains('on'):on;
+    if(will)ovl.classList.remove('on');
+    gto.classList.toggle('on',will);
+    if(will){gin.value=String(i+1);preview(i+1);setTimeout(function(){try{gin.focus();gin.select();}catch(err){}},20);}
+    else{try{gin.blur();}catch(err){}}
+  }
+  var qbuf='',qtimer=null;
+  function quickHide(){gqt.classList.remove('on');clearTimeout(qtimer);}
+  function quickPush(d){
+    if(qbuf===''&&d==='0')return;
+    var cand=(qbuf==='')?d:(qbuf+d),v=parseInt(cand,10);
+    if(v>n){v=parseInt(d,10);if(v>n||v<1){quickHide();qbuf='';return;}qbuf=d;}
+    else{qbuf=cand;}
+    gq.textContent=qbuf+' / '+n;
+    gqt.classList.add('on');
+    clearTimeout(qtimer);
+    var tgt=parseInt(qbuf,10);
+    qtimer=setTimeout(function(){go(tgt-1);qbuf='';quickHide();},1000);
+  }
+  gin.addEventListener('input',function(){preview(gin.value);});
+  gto.addEventListener('click',function(e){if(e.target===gto)toggleGoto(false);});
+  pg.style.cursor='pointer';pg.title='点击跳转到指定页（快捷键 G）';
+  pg.addEventListener('click',function(e){e.stopPropagation();toggleGoto(true);});
+  /* GOTO:JS 止 */
+
+  document.addEventListener('keydown',function(e){
+    if(gto.classList.contains('on')){
+      if(e.key==='Escape'){e.preventDefault();toggleGoto(false);}
+      else if(e.key==='Enter'){e.preventDefault();var gv=parseInt(gin.value,10);if(!isNaN(gv)){go(gv-1);toggleGoto(false);}}
+      else if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();gin.value=String(Math.min(n,i+2));preview(i+2);}
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();gin.value=String(Math.max(1,i));preview(i);}
+      return;
+    }
+    if(/^[0-9]$/.test(e.key)&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();quickPush(e.key);return;}
+    if(e.key==='g'||e.key==='G'){e.preventDefault();toggleGoto(true);return;}
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(i+1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(i-1);}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(n-1);}
+    else if(e.key==='o'||e.key==='O'){toggleGoto(false);toggleOvl();}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}
+      else{document.exitFullscreen&&document.exitFullscreen();}}
+    else if(e.key==='Escape'){toggleOvl(false);}
+  });
+  document.getElementById('next').onclick=function(e){e.stopPropagation();go(i+1);};
+  document.getElementById('prev').onclick=function(e){e.stopPropagation();go(i-1);};
+  document.getElementById('stage').addEventListener('click',function(e){
+    if(ovl.classList.contains('on')||gto.classList.contains('on'))return;
+    if(e.target.closest('.btn'))return;
+    if(window.getSelection().toString())return;
+    go(i+1);
+  });
+  var x0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;
+    if(Math.abs(dx)>50){go(dx<0?i+1:i-1);}x0=null;},{passive:true});
+
+  var h=parseInt((location.hash||'').replace('#',''),10);
+  go(isNaN(h)?0:h-1);
+  fitAll();
+  window.addEventListener('resize',fitAll);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(fitAll);}
+  setTimeout(fitAll,150);
+})();
+</script>
+</body>
+</html>

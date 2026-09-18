@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>deck 几何校验</title></head>
+<body><pre id="out" style="font:13px monospace;background:#fff;color:#000;padding:20px">running…</pre>
+<!--
+  deck 布局几何校验 harness（已修正坐标换算，见 mistaken_data M007）
+
+  用法：
+    1) 把待校验 deck 复制为同目录下的 deck_raw.html
+    2) chrome.exe --headless=new --disable-gpu --no-sandbox --allow-file-access-from-files ^
+         --window-size=1600,900 --virtual-time-budget=9000 --dump-dom ^
+         "file:///…/verify_layout.html" | sed -n '/<pre/,/<\/pre>/p' | sed 's/<[^>]*>//g'
+    3) 换 --window-size 再跑一次做多视口回归（如 1366x768、2560x1080）
+
+  也可用 ?src=<相对URL> 指定别的源文件。
+
+  判定标准：异常页数必须为 0。
+    检查项：上/下/左/右溢出（画布 1600×900）、压眉标、压导航、偏心率 |V|/|H| ≤ 3px
+  坐标换算（两步缺一不可）：
+    画布X = (屏幕X − deckRect.left) ÷ (deckRect.height / 900)
+-->
+<script>
+var q = new URLSearchParams(location.search);
+var SRC = q.get('src') || 'deck_raw.html';
+fetch(SRC).then(function(r){return r.text();}).then(function(html){
+  document.open(); document.write(html); document.close();
+  setTimeout(function(){
+    var deck = document.getElementById('deck');
+    var dr = deck.getBoundingClientRect();
+    var ds = dr.height / 900, ox = dr.left, oy = dr.top;
+    var dx = function(x){ return (x - ox) / ds; };
+    var dy = function(y){ return (y - oy) / ds; };
+    var navT = dy(document.getElementById('nav').getBoundingClientRect().top);
+    var rows = [], bad = 0, total = 0;
+    [].slice.call(document.querySelectorAll('.slide')).forEach(function(s, idx){
+      var z = s.querySelector('.zin'), eb = s.querySelector('.eyebrow');
+      if (!z) return; total++;
+      var b = z.getBoundingClientRect();
+      var zt = dy(b.top), zb = dy(b.bottom), zl = dx(b.left), zr = dx(b.right);
+      var iss = [];
+      if (zt < -0.5) iss.push('上溢出');
+      if (zb > 900.5) iss.push('下溢出');
+      if (zl < -0.5) iss.push('左溢出');
+      if (zr > 1600.5) iss.push('右溢出');
+      if (eb) { var e = eb.getBoundingClientRect();
+        if (zt < dy(e.bottom) - 0.5) iss.push('压眉标' + (dy(e.bottom) - zt).toFixed(0)); }
+      if (zb > navT + 0.5) iss.push('压导航' + (zb - navT).toFixed(0));
+      var vc = (zt + zb) / 2 - 450, hc = (zl + zr) / 2 - 800;
+      if (Math.abs(vc) > 3) iss.push('垂直偏心' + vc.toFixed(1));
+      if (Math.abs(hc) > 3) iss.push('水平偏心' + hc.toFixed(1));
+      if (iss.length) bad++;
+      rows.push('P' + (idx + 1 < 10 ? '0' + (idx + 1) : (idx + 1))
+        + ' 区间[' + zt.toFixed(0) + ',' + zb.toFixed(0) + '|' + zl.toFixed(0) + ',' + zr.toFixed(0) + ']'
+        + ' 偏心[V' + vc.toFixed(1) + ',H' + hc.toFixed(1) + '] '
+        + (iss.length ? '✗ ' + iss.join(',') : '✓'));
+    });
+    rows.push('==== 异常: ' + bad + ' / ' + total + ' （ds=' + ds.toFixed(3) + ' 视口已归一）====');
+    var text = rows.join('\n');
+    /* 注意：document.write 会清空外层文档，原 #out 已不存在，必须重新写入 <pre> */
+    document.body.innerHTML = '<pre id="out" style="font:13px monospace;background:#fff;color:#000;padding:20px">'
+      + text.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</pre>';
+  }, 2000);
+}).catch(function(e){
+  document.getElementById('out').textContent =
+    '加载失败：' + e + '\n请把待校验 deck 复制为本文件同目录的 deck_raw.html，'
+    + '并用 --allow-file-access-from-files 启动 Chrome。';
+});
+</script></body></html>

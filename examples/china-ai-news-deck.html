@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国人工智能要闻速览（近 14 天）（图文演示版 v1.2）</title>
+<meta name="deck-version" content="v1.2">
+<meta name="deck-updated" content="2026-09-18 06:35 +08:00">
+<style>
+/* 全局色板。--track=条形图轨道（比面板亮，保证边界可见）；
+   --tone=页面主题色（默认金），由 section[data-tone] 按板块覆盖。
+   注意：注释只能写在声明块【外面】，块内写中文注释会让整块被解析器丢弃。 */
+:root{
+  --bg:#0b0b0d; --panel:#151518; --panel2:#1c1c20; --line:#2c2c33;
+  --text:#f2f2f4; --text2:#c6c6d0; --muted:#a5a5b2;
+  --accent:#ffb74d; --accent-dim:#6b4d24;
+  --up:#ff5252; --down:#3ddc84; --chip:#26262c;
+  --track:#22222a;
+  --tone:#ffb74d; --tone-dim:#2a2418; --tone-line:#4a3618;
+}
+/* ===== 板块分类色（全部避开蓝色系 200–260 色相）=====
+   policy 政策=金 / model 模型=青绿 / chip 算力=橙
+   capital 资本=玫红 / gov 治理=紫红 / world 国际=黄绿        */
+.slide[data-tone="policy"] {--tone:#ffb74d;--tone-dim:#2a2418;--tone-line:#5c421c}
+.slide[data-tone="model"]  {--tone:#2ee6c8;--tone-dim:#123330;--tone-line:#1d6157}
+.slide[data-tone="chip"]   {--tone:#ff8a65;--tone-dim:#33201a;--tone-line:#63382c}
+.slide[data-tone="capital"]{--tone:#ff5c8a;--tone-dim:#331825;--tone-line:#63273a}
+.slide[data-tone="gov"]    {--tone:#d16ee0;--tone-dim:#2c1a30;--tone-line:#532a5a}
+.slide[data-tone="world"]  {--tone:#a8d84a;--tone-dim:#25301a;--tone-line:#42562a}
+*{box-sizing:border-box;margin:0;padding:0}
+html{font-size:19px}
+body{background:#000;color:var(--text);overflow:hidden;
+  font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif;line-height:1.6}
+
+/* ===== 固定 16:9 画布，整体等比缩放 ===== */
+#stage{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden}
+#deck{position:relative;width:1600px;height:900px;flex:none;transform-origin:center center;background:var(--bg);overflow:hidden}
+
+/* ===== 页面骨架：eyebrow + wrap(zin 自动缩放填满) ===== */
+/* 上下居中：padding-top == padding-bottom（相对 900px 画布几何中心严格对称）
+   左右居中：padding-left == padding-right 且 .wrap 用 justify-content:center */
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;
+  padding:5.5rem 4.5rem 5.5rem;opacity:0;pointer-events:none;transition:opacity .32s ease}
+.slide.active{opacity:1;pointer-events:auto}
+.slide::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(ellipse at 12% 0%,#1a1a20 0%,transparent 62%);pointer-events:none}
+.slide>*{position:relative}
+.wrap{flex:1 1 auto;min-height:0;position:relative;display:flex;
+  align-items:center;justify-content:center}
+/* .zin 用 transform:scale(k) 居中缩放：宽度设为 100/k % 后放大，
+   渲染宽度恰好 = 容器宽，且 origin 在中心 → 恒左右居中、绝不横向溢出 */
+.zin{width:100%;flex:none;transform-origin:center center}
+
+.eyebrow{position:absolute;top:2.1rem;left:4.5rem;right:4.5rem;display:flex;
+  justify-content:space-between;align-items:center;font-size:.85rem;color:var(--muted);letter-spacing:1px}
+.eyebrow .sec{color:var(--tone);font-weight:600}
+h1{font-size:3rem;line-height:1.25;font-weight:800;letter-spacing:1px}
+h2{font-size:2rem;font-weight:750;line-height:1.3;color:#fff;margin-bottom:.45rem}
+h2 .bar{display:inline-block;width:.32rem;height:1.5rem;background:var(--tone);vertical-align:-.22rem;margin-right:.7rem;border-radius:2px}
+.sub{font-size:1rem;color:var(--muted);font-weight:400;padding-left:1.05rem;margin-bottom:1.3rem}
+h3{font-size:1.12rem;color:var(--tone);font-weight:650;margin:1rem 0 .45rem}
+.up{color:var(--up);font-weight:700}
+.down{color:var(--down);font-weight:700}
+b,strong{color:#fff;font-weight:650}
+ul{margin:.35rem 0 .35rem 1.5rem}
+li{margin:.4rem 0;font-size:1.02rem}
+li::marker{color:var(--tone)}
+li b{color:var(--tone)}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:1rem}
+th{background:var(--panel2);color:var(--tone);font-weight:650;text-align:left;
+  padding:.55rem .85rem;border-bottom:1px solid var(--line);font-size:.92rem;letter-spacing:.5px;white-space:nowrap}
+td{padding:.5rem .85rem;border-bottom:1px solid #232329}
+td:first-child{white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#1b1b21}
+.num{font-variant-numeric:tabular-nums;font-family:ui-monospace,Consolas,monospace}
+
+/* 卡片 */
+.grid{display:grid;gap:.9rem}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:.7rem;padding:.9rem 1.05rem}
+.card.hl{border-color:var(--tone-line);background:linear-gradient(160deg,var(--tone-dim),var(--panel))}
+.card .k{font-size:.84rem;color:var(--muted);margin-bottom:.2rem}
+.card .v{font-size:1.75rem;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.15}
+.card .d{font-size:.86rem;color:var(--muted);margin-top:.18rem}
+.card h4{font-size:1.05rem;color:var(--tone);margin-bottom:.3rem;font-weight:650}
+.card p,.card li{font-size:.93rem}
+
+/* ===== 图表：双向条形图（零轴居中，涨右红跌左绿） ===== */
+.bars{margin:.6rem 0}
+.bar{display:grid;grid-template-columns:6.6rem 1fr 4.6rem;align-items:center;gap:.65rem;margin:.28rem 0;font-size:.95rem}
+.bar .lb{color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .tr{height:1.35rem;background:var(--track);border-radius:.2rem;position:relative}
+.bar .mid{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:#3d3d46}
+.bar .fl{position:absolute;top:0;bottom:0;border-radius:.15rem}
+.bar .fl.u{left:50%;background:linear-gradient(90deg,#7a2424,var(--up))}
+.bar .fl.d{right:50%;background:linear-gradient(270deg,#165c39,var(--down))}
+.bar .vl{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+
+/* ===== 图表：单向条形图 ===== */
+.sbars{margin:.5rem 0}
+.sbar{display:grid;grid-template-columns:8.5rem 1fr 3.6rem;align-items:center;gap:.65rem;margin:.3rem 0;font-size:.95rem}
+.sbar .lb{color:var(--muted);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sbar .tr{height:1.3rem;background:var(--track);border-radius:.2rem;overflow:hidden}
+.sbar .fl{display:block;height:100%;border-radius:.2rem;background:linear-gradient(90deg,var(--tone-line),var(--tone))}
+.sbar .fl.g{background:linear-gradient(90deg,#165c39,var(--down))}
+.sbar .fl.a{background:linear-gradient(90deg,var(--accent-dim),var(--accent))}
+.sbar .vl{font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+
+/* ===== 图表：环形图 ===== */
+.ring{width:11rem;height:11rem;flex:none}
+.ring text{fill:#fff;font-family:ui-monospace,Consolas,monospace}
+.ringwrap{display:flex;align-items:center;gap:1.6rem}
+.ringlegend{font-size:1rem}
+.ringlegend div{margin:.4rem 0;display:flex;align-items:center;gap:.5rem}
+.sw{width:.85rem;height:.85rem;border-radius:.2rem;flex:none}
+
+/* ===== 图表：投票方块阵列 ===== */
+.votes{display:flex;gap:.45rem;margin:.7rem 0}
+.vote{width:2.4rem;height:3.2rem;border-radius:.28rem;border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;font-size:.86rem;
+  background:#16161a;color:var(--muted);flex-direction:column;line-height:1.15}
+.vote.hold{background:linear-gradient(160deg,var(--tone-dim),var(--panel));border-color:var(--tone-line);color:var(--tone)}
+.vote.hike{background:linear-gradient(160deg,#3a1616,#16161a);border-color:#6b2424;color:var(--up)}
+.vote small{font-size:.66rem;opacity:.75}
+
+/* ===== 图表：时间轴 ===== */
+.tl{display:flex;align-items:flex-start;margin:1rem 0 .6rem;position:relative}
+.tli{flex:1;text-align:center;position:relative}
+.tli::after{content:"";position:absolute;top:1.05rem;left:50%;right:-50%;height:2px;background:var(--line);z-index:0}
+.tli:last-child::after{display:none}
+.tli .dot{width:2.1rem;height:2.1rem;border-radius:50%;background:var(--tone);color:#111;
+  font-weight:800;font-size:.85rem;display:flex;align-items:center;justify-content:center;
+  margin:0 auto .5rem;position:relative;z-index:1;box-shadow:0 0 0 4px #0b0b0d}
+.tli .tt{font-size:1.05rem;font-weight:700;color:var(--tone);font-variant-numeric:tabular-nums}
+.tli .td{font-size:.88rem;color:var(--muted);margin-top:.15rem;line-height:1.35}
+
+/* ===== 图表：阶梯路径图 ===== */
+.stepsvg{width:100%;height:13rem;display:block}
+
+/* ===== 图表：交易时段甘特 ===== */
+.gantt{width:100%;height:auto;aspect-ratio:600/150;display:block;margin:.4rem 0}
+
+/* ===== 提示条 ===== */
+.note{border-left:3px solid var(--tone);background:var(--panel);padding:.7rem 1.05rem;
+  border-radius:0 .5rem .5rem 0;font-size:.98rem;margin-top:1.3rem}
+.note.warn{border-left-color:#ff8a65}
+.note .t{color:var(--tone);font-weight:700;margin-right:.4rem}
+.note.warn .t{color:#ff8a65}
+
+/* ===== 封面：水平居中 + 垂直居中 ===== */
+.cover .zin{text-align:center}
+.cover h1{margin-bottom:1.2rem}
+.cover .bigquote{display:inline-block;border-left:4px solid var(--accent);padding:.25rem 0 .25rem 1.1rem;text-align:left}
+.cmeta{font-size:1.12rem;color:var(--muted);line-height:2}
+.cmeta b{color:var(--accent)}
+.tzbar{margin-top:1.4rem;padding-top:1rem;border-top:1px dashed var(--line);font-size:.93rem;color:var(--muted);width:100%}
+.tzbar code{background:var(--chip);padding:.15rem .5rem;border-radius:.3rem;color:var(--text);font-size:.88rem}
+.bigquote{margin-top:1.5rem;font-size:1.25rem;color:var(--accent);font-weight:650;border-left:4px solid var(--accent);padding-left:1rem}
+
+/* ===== 导航 ===== */
+#nav{position:absolute;bottom:1.5rem;left:4.5rem;right:4.5rem;display:flex;align-items:center;
+  gap:1rem;font-size:.85rem;color:var(--muted);z-index:20}
+#bar{flex:1;height:3px;background:#212128;border-radius:2px;overflow:hidden}
+#barin{height:100%;width:0;background:var(--accent);transition:width .3s ease}
+.btn{background:var(--chip);border:1px solid var(--line);color:var(--text);width:2.1rem;height:2.1rem;
+  border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;
+  user-select:none;transition:.15s;flex:none}
+.btn:hover{background:var(--accent);color:#111;border-color:var(--accent)}
+#pg{font-variant-numeric:tabular-nums;min-width:3.6rem;text-align:center}
+#ver{background:var(--accent-dim);color:var(--accent);border:1px solid #4a3618;border-radius:.9rem;
+  padding:.1rem .6rem;font-size:.78rem;font-variant-numeric:tabular-nums;letter-spacing:.5px;flex:none}
+.vchip{display:inline-block;background:var(--accent-dim);color:var(--accent);border:1px solid #4a3618;
+  border-radius:1rem;padding:.15rem .75rem;font-size:.9rem;font-weight:700;letter-spacing:1px;
+  vertical-align:.35rem;margin-left:.8rem}
+#hint{font-size:.78rem;color:#85858f;white-space:nowrap}
+#ovl{position:absolute;inset:0;background:rgba(0,0,0,.94);z-index:50;display:none;
+  grid-template-columns:repeat(5,1fr);gap:.8rem;padding:2.5rem;align-content:start;overflow:auto}
+#ovl.on{display:grid}
+#ovl .mini{border:1px solid var(--line);border-radius:.5rem;padding:.6rem;font-size:.72rem;
+  color:var(--muted);cursor:pointer;background:#111114;aspect-ratio:16/9;overflow:hidden}
+#ovl .mini:hover,#ovl .mini.cur{border-color:var(--accent);color:var(--text)}
+#ovl .mini b{display:block;color:var(--accent);font-size:.85rem;margin-bottom:.2rem}
+
+/* ===== 指定页码跳转（G 键 / 点击底部页码 / 直接键数字） ===== */
+#pg{cursor:pointer;border-radius:.4rem;padding:.05rem .35rem;transition:.15s;border:1px solid transparent}
+#pg:hover{color:var(--accent);background:var(--chip);border-color:var(--accent-dim)}
+#goto{position:absolute;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.84)}
+#goto.on{display:flex}
+#gbox{width:48rem;background:var(--panel);border:1px solid var(--accent-dim);border-radius:1rem;
+  padding:1.5rem 1.8rem 1.3rem;box-shadow:0 1.6rem 4rem rgba(0,0,0,.65)}
+#gtop{display:flex;justify-content:space-between;align-items:baseline;font-size:.95rem;color:var(--muted);margin-bottom:.9rem}
+#gtop b{color:var(--accent);font-weight:700;font-variant-numeric:tabular-nums}
+#gin{display:block;width:100%;background:#0e0e11;border:1px solid var(--line);border-radius:.6rem;
+  color:var(--text);font-size:2.2rem;font-weight:800;text-align:center;padding:.6rem 1rem;outline:none;
+  font-family:inherit;font-variant-numeric:tabular-nums;letter-spacing:3px;transition:.15s}
+#gin:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+#gpg{display:grid;grid-template-columns:repeat(10,1fr);gap:.45rem;margin-top:1.1rem}
+#gpg .gn{background:#111114;border:1px solid var(--line);border-radius:.4rem;padding:.4rem 0;
+  text-align:center;font-size:.98rem;color:var(--text2);cursor:pointer;user-select:none;
+  font-variant-numeric:tabular-nums;transition:.12s}
+#gpg .gn:hover{background:var(--accent);color:#111;border-color:var(--accent);font-weight:800}
+#gpg .gn.cur{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:800}
+#gprev{margin-top:1rem;min-height:1.6rem;text-align:center;font-size:1.05rem;color:var(--muted)}
+#gprev b{color:var(--tone);font-weight:700;font-variant-numeric:tabular-nums;margin-right:.45rem}
+#ghint{margin-top:.6rem;text-align:center;font-size:.82rem;color:#85858f;line-height:1.7}
+#ghint code{background:var(--chip);padding:.1rem .45rem;border-radius:.3rem;color:var(--text);font-size:.8rem}
+#gquick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:70;display:none;
+  background:rgba(0,0,0,.92);border:1px solid var(--accent);border-radius:.9rem;padding:1rem 2.2rem;
+  text-align:center;box-shadow:0 1rem 3rem rgba(0,0,0,.7)}
+#gquick.on{display:block}
+#gquick .q{font-size:3.4rem;font-weight:800;color:var(--accent);letter-spacing:6px;
+  font-variant-numeric:tabular-nums;line-height:1.2}
+#gquick small{display:block;font-size:.85rem;color:var(--muted);letter-spacing:1px;margin-top:.2rem}
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="deck">
+<!-- ========= 1 封面 ========= -->
+<section class="slide cover" data-tone="policy">
+  <div class="eyebrow"><span class="sec">中国 AI 要闻汇报</span><span>2026.09.04 – 09.18 · v1.2</span></div>
+  <div class="wrap"><div class="zin" data-cap="1.12">
+    <h1>中国人工智能要闻汇报<span class="vchip">v1.2</span></h1>
+    <div class="cmeta">政策 · 模型 · 算力 · 资本 · 治理 · 国际<br>覆盖区间：<b>2026 年 9 月 4 日 – 9 月 18 日（近 14 天）</b>　编制：北京时间 09-18 05:30</div>
+    <div class="bigquote">政策密集落地 + 模型成本骤降 + 算力自主提速 —— 三股力量同时加速，资本热度与治理框架同步收紧</div>
+  </div></div>
+</section>
+
+<!-- ========= 2 时间轴 ========= -->
+<section class="slide" data-tone="policy">
+  <div class="eyebrow"><span class="sec">一 · 14 天要闻</span><span>关键节点（北京时间）</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>14 天关键事件时间轴</h2>
+    <div class="sub">9 月 4 日 – 9 月 18 日 · 按事件日期排列</div>
+    <div class="tl">
+      <div class="tli"><div class="dot">09-04</div><div class="tt">中小企业创业计划</div><div class="td">工信部：3 年培育<br>AI 创业企业 1 万家+</div></div>
+      <div class="tli"><div class="dot">09-07</div><div class="tt">最高法涉 AI 意见</div><div class="td">首部司法裁判规则<br>5 部分 24 条</div></div>
+      <div class="tli"><div class="dot">09-08</div><div class="tt">美方点名 6 家</div><div class="td">NSA/CISA/FBI 联合公告<br>指控"工业规模蒸馏"</div></div>
+      <div class="tli"><div class="dot">09-10</div><div class="tt">DeepSeek V4.1-Flash</div><div class="td">552B MoE 发布<br>缓存命中价降 60%</div></div>
+      <div class="tli"><div class="dot">09-11</div><div class="tt">"AI+软件"方案</div><div class="td">2028 年覆盖<br>2 万家规上软件企业</div></div>
+      <div class="tli"><div class="dot">09-13</div><div class="tt">智谱 50 亿美元</div><div class="td">20 亿配售<br>+ 30 亿零息可转债</div></div>
+    </div>
+    <div class="grid g4" style="margin-top:1.4rem">
+      <div class="card"><div class="k">09-06 芯片出货</div><div class="v">165 万张</div><div class="d">国产占比首破四成（投研测算）</div></div>
+      <div class="card"><div class="k">09-09 商务部</div><div class="v">强硬回应</div><div class="d">"于事无凭、于法无据"</div></div>
+      <div class="card"><div class="k">09-14 安全框架 3.0</div><div class="v">网安标委</div><div class="d">网安周开幕式发布</div></div>
+      <div class="card hl"><div class="k">09-16 豆包 2.1 Pro</div><div class="v down">-30%+</div><div class="d">图像/视频推理 Token 消耗</div></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ========= 3 总览 ========= -->
+<section class="slide" data-tone="policy">
+  <div class="eyebrow"><span class="sec">二 · 总览</span><span>一图看六大板块</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>六大板块速览：政策与算力最强，治理同步补位</h2>
+    <div class="sub">按 14 天内事件密度与影响强度排序</div>
+    <div class="sbars">
+      <div class="sbar"><span class="lb">政策落地</span><span class="tr"><i class="fl" style="width:100%"></i></span><span class="vl">3 项部级文件</span></div>
+      <div class="sbar"><span class="lb">算力自主</span><span class="tr"><i class="fl" style="width:88%"></i></span><span class="vl">超节点 + 出货破四成</span></div>
+      <div class="sbar"><span class="lb">模型迭代</span><span class="tr"><i class="fl" style="width:76%"></i></span><span class="vl">V4.1-Flash / 豆包新版</span></div>
+      <div class="sbar"><span class="lb">资本热度</span><span class="tr"><i class="fl" style="width:70%"></i></span><span class="vl">50 亿美元 + IPO 潮</span></div>
+      <div class="sbar"><span class="lb">治理框架</span><span class="tr"><i class="fl" style="width:58%"></i></span><span class="vl">司法 + 安全 3.0</span></div>
+      <div class="sbar"><span class="lb">国际博弈</span><span class="tr"><i class="fl" style="width:52%"></i></span><span class="vl">蒸馏指控 + 反制警告</span></div>
+    </div>
+    <div class="grid g4" style="margin-top:1.2rem">
+      <div class="card hl"><div class="k">智能经济核心产业</div><div class="v">超万亿</div><div class="d">规模已破万亿元（人民日报）</div></div>
+      <div class="card"><div class="k">词元日均调用量</div><div class="v">140 万亿</div><div class="d">较 2024 同期增长超 1000 倍</div></div>
+      <div class="card"><div class="k">软件业务收入</div><div class="v">15.48 万亿</div><div class="d">2025 年，同比 +13.2%</div></div>
+      <div class="card"><div class="k">AI 应用服务商目标</div><div class="v">2000 → 3000 家</div><div class="d">2026 底 / 2027 底</div></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ========= 4 政策① 中小企业 ========= -->
+<section class="slide" data-tone="policy">
+  <div class="eyebrow"><span class="sec">三 · 政策 ①</span><span>09-04 工信部</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>《人工智能中小企业创业支持计划（2026—2028）》</h2>
+    <div class="sub">4 方面 15 项重点任务 · 坚持市场主导 + 政府引导 + 创新驱动 + 生态赋能</div>
+    <div class="grid g4" style="margin-top:.6rem">
+      <div class="card hl"><div class="k">新培育科技和创新型中小企业</div><div class="v">1 万家+</div><div class="d">行业应用 / 数据服务 / 智能算力</div></div>
+      <div class="card hl"><div class="k">专精特新"小巨人"</div><div class="v">2000 家</div><div class="d">突破目标（3 年）</div></div>
+      <div class="card"><div class="k">科技型企业孵化器</div><div class="v">10 个</div><div class="d">高标准建设</div></div>
+      <div class="card"><div class="k">国家级特色产业集群</div><div class="v">10 个</div><div class="d">新培育</div></div>
+    </div>
+    <div class="sbars" style="margin-top:1.2rem">
+      <div class="sbar"><span class="lb">创业要素供给</span><span class="tr"><i class="fl" style="width:100%"></i></span><span class="vl">15 项</span></div>
+      <div class="sbar"><span class="lb">创业主体培育</span><span class="tr"><i class="fl" style="width:100%"></i></span><span class="vl">15 项</span></div>
+      <div class="sbar"><span class="lb">开源生态赋能</span><span class="tr"><i class="fl" style="width:93%"></i></span><span class="vl">重点</span></div>
+      <div class="sbar"><span class="lb">创业服务保障</span><span class="tr"><i class="fl" style="width:87%"></i></span><span class="vl">平台 10 个</span></div>
+    </div>
+    <div class="note"><span class="t">💡</span>信号：政策重心从"扶大模型"转向"扶创业生态"——<b>让中小企业长出来</b>，而不是只让大厂跑得快。</div>
+  </div></div>
+</section>
+
+<!-- ========= 5 政策② 应用服务商 ========= -->
+<section class="slide" data-tone="policy">
+  <div class="eyebrow"><span class="sec">三 · 政策 ②</span><span>09-10 工信部</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>AI 应用服务商培育专项行动：把"Token"写进采购清单</h2>
+    <div class="sub">四项重点任务 · 首次将大模型 / 智能体 / Token 三类并列纳入服务采购对象</div>
+    <div class="grid g2" style="margin-top:.8rem">
+      <div>
+        <div class="bars" style="margin:0">
+          <div class="bar"><span class="lb">2026 底目标</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:33.3%"></i></span><span class="vl up">2000 家</span></div>
+          <div class="bar"><span class="lb">2027 底目标</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:50%"></i></span><span class="vl up">3000 家</span></div>
+        </div>
+        <div style="color:var(--muted);margin-top:.5rem">服务商数量目标（条长按 3000 家归一化 ×50%）</div>
+      </div>
+      <div>
+        <div class="ringwrap">
+          <svg class="ring" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#26262c" stroke-width="13"/>
+            <circle cx="50" cy="50" r="40" fill="none" stroke="#ffb74d" stroke-width="13"
+              stroke-linecap="round" stroke-dasharray="251.33" stroke-dashoffset="100.53"
+              transform="rotate(-90 50 50)"/>
+            <text x="50" y="47" text-anchor="middle" font-size="19" font-weight="800">60%</text>
+            <text x="50" y="63" text-anchor="middle" font-size="9" fill="#9a9a4">智谱可转债占比</text>
+          </svg>
+          <div class="ringlegend" style="flex:1">
+            <div><span class="sw" style="background:var(--accent)"></span><b>零息可转债</b> 30 亿美元</div>
+            <div><span class="sw" style="background:#26262c"></span><b>股份配售</b> 20 亿美元</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><span class="t">📌</span>核心变化：从"买软件"转向"<b>买智能、买服务</b>"——Token 成为可计量、可核算、可审计的统一计价尺度。</div>
+  </div></div>
+</section>
+
+<!-- ========= 6 政策③ AI+软件 ========= -->
+<section class="slide" data-tone="policy">
+  <div class="eyebrow"><span class="sec">三 · 政策 ③</span><span>09-11 工信部信发〔2026〕209 号</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>《"人工智能 + 软件"专项行动实施方案》</h2>
+    <div class="sub">2028 年阶段性目标 · 2030 年关键软件全面智能化升级</div>
+    <div class="grid g4" style="margin-top:.7rem">
+      <div class="card hl"><div class="k">覆盖规上软件企业</div><div class="v">2 万家</div><div class="d">到 2028 年</div></div>
+      <div class="card"><div class="k">智能化技改项目</div><div class="v">100 项</div><div class="d">累计组织实施</div></div>
+      <div class="card"><div class="k">智能体软件标杆</div><div class="v">100 个</div><div class="d">重点行业打造</div></div>
+      <div class="card"><div class="k">优质开源项目</div><div class="v">5 个+</div><div class="d">孵化目标</div></div>
+    </div>
+    <div class="bars" style="margin-top:1.1rem">
+      <div class="bar"><span class="lb">软件业收入</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:43.2%"></i></span><span class="vl up">+13.2%</span></div>
+      <div class="bar"><span class="lb">词元调用量</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:50%"></i></span><span class="vl up">+1000 倍↑</span></div>
+      <div class="bar"><span class="lb">巡视耗时</span><span class="tr"><i class="mid"></i><i class="fl d" style="width:35%"></i></span><span class="vl down">-70%</span></div>
+    </div>
+    <div class="note"><span class="t">🏭</span>落地样本：国家电网 1.8 万运维人员配"AI 搭子"，单站巡视 <b>2.5 小时 → 45 分钟</b>；龙源电力发电大模型累计发现设备缺陷 <b>2600+</b>。</div>
+  </div></div>
+</section>
+
+<!-- ========= 7 模型① DeepSeek ========= -->
+<section class="slide" data-tone="model">
+  <div class="eyebrow"><span class="sec">四 · 模型 ①</span><span>09-10 发布 / 09-14 切换</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>DeepSeek V4.1-Flash：用新架构把推理成本再砍一刀</h2>
+    <div class="sub">552B MoE · 非对称 Causal-Encoder-Decoder 架构 · MIT 开源许可</div>
+    <div class="grid g4" style="margin-top:.6rem">
+      <div class="card hl"><div class="k">总参数 / 激活</div><div class="v">552B</div><div class="d">输入激活 8B、输出激活 16B</div></div>
+      <div class="card"><div class="k">上下文长度</div><div class="v">1M</div><div class="d">百万 token</div></div>
+      <div class="card"><div class="k">KV 缓存 HBM 需求</div><div class="v down">1/4</div><div class="d">SSD 需求降至 1/8</div></div>
+      <div class="card"><div class="k">闲时缓存命中输入</div><div class="v down">0.02 元</div><div class="d">每百万 token，降幅 60%</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:1rem">
+      <div class="card">
+        <h4>定价（9/10 12:00 起，每百万 token）</h4>
+        <div class="sbars" style="margin-top:.4rem">
+          <div class="sbar"><span class="lb">闲时命中输入</span><span class="tr"><i class="fl" style="width:8%"></i></span><span class="vl">0.02 元</span></div>
+          <div class="sbar"><span class="lb">闲时未命中输入</span><span class="tr"><i class="fl" style="width:25%"></i></span><span class="vl">1 元</span></div>
+          <div class="sbar"><span class="lb">输出</span><span class="tr"><i class="fl" style="width:100%"></i></span><span class="vl">4 元</span></div>
+        </div>
+        <div class="d" style="color:var(--muted);margin-top:.35rem">高峰时段为闲时的 2 倍</div>
+      </div>
+      <div class="card hl">
+        <h4>关键动作：自家小模型替掉自家大模型</h4>
+        <ul style="margin-top:.3rem">
+          <li>V4.1-Flash 性能 / 速度 / 总用时<b>全面超越 V4 Pro</b></li>
+          <li><b>9 月 14 日 12:00</b> V4 Pro 下线，请求全部路由至新版</li>
+          <li>Agent Arena 开源模型<b>第三</b>，任务中位成本 0.07 美元</li>
+          <li>较同级对手便宜约 <b>68%</b></li>
+        </ul>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ========= 8 模型② 豆包 + 密集发布 ========= -->
+<section class="slide" data-tone="model">
+  <div class="eyebrow"><span class="sec">四 · 模型 ②</span><span>09-16 火山引擎 / 多家同发</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>豆包 2.1 Pro（0915 新版）：主攻"看图写代码"</h2>
+    <div class="sub">四大更新方向：Agent 专业任务交付 / 多模态 Coding / 多模态理解 / Token 效率</div>
+    <div class="grid g3" style="margin-top:.6rem">
+      <div class="card hl"><div class="k">图像 / 视频推理 Token</div><div class="v down">-30%+</div><div class="d">较上一代，推理轮次同步下降</div></div>
+      <div class="card"><div class="k">新能力</div><div class="v">读图生码</div><div class="d">设计稿 / 图纸 / 操作录屏 → 前端代码</div></div>
+      <div class="card"><div class="k">上线范围</div><div class="v">全量</div><div class="d">火山方舟 API + 豆包 App + TRAE</div></div>
+    </div>
+    <table style="margin-top:1rem">
+      <thead><tr><th>厂商 / 产品</th><th>动作</th><th>看点</th></tr></thead>
+      <tbody>
+        <tr><td>阿里通义千问</td><td>推出行业版智能体市场</td><td>供应链 / 质检 / 客服预制智能体可直接采购</td></tr>
+        <tr><td>腾讯混元</td><td>发布多模态工业模型</td><td>产线图片、仪表读数识别，用于视觉质检</td></tr>
+        <tr><td>百度文心</td><td>更新代码模型版本</td><td>强化工业软件 / SAP / ERP 脚本生成</td></tr>
+        <tr><td>智谱 GLM</td><td>升级企业版接口</td><td>单次读取百万字级 PDF 并交叉比对</td></tr>
+        <tr><td>月之暗面 Kimi</td><td>启动企业"登月计划"</td><td>国内落地 FDE 前沿部署工程师模式</td></tr>
+        <tr><td>高德</td><td>ABot-Earth 0.7</td><td>3D 原生城市世界模型，服务自动驾驶 / 数字孪生</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><span class="t">🔧</span>共同方向：从"会不会"转向"能不能把事做完"——<b>Agent 化 + 多模态降本</b>成为竞争主轴。</div>
+  </div></div>
+</section>
+
+<!-- ========= 9 算力① 出货份额 ========= -->
+<section class="slide" data-tone="chip">
+  <div class="eyebrow"><span class="sec">五 · 算力 ①</span><span>09-06 投研机构测算</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>国产 AI 芯片出货首破四成：165 万张</h2>
+    <div class="sub">2026 年国内 AI 芯片出货结构 · 条长按 81.2 万张归一化</div>
+    <div class="sbars" style="margin-top:.6rem">
+      <div class="sbar"><span class="lb">华为昇腾</span><span class="tr"><i class="fl" style="width:100%"></i></span><span class="vl">81.2 万</span></div>
+      <div class="sbar"><span class="lb">阿里平头哥</span><span class="tr"><i class="fl" style="width:32.6%"></i></span><span class="vl">26.5 万</span></div>
+      <div class="sbar"><span class="lb">百度昆仑芯</span><span class="tr"><i class="fl" style="width:14.3%"></i></span><span class="vl">11.6 万</span></div>
+      <div class="sbar"><span class="lb">寒武纪</span><span class="tr"><i class="fl" style="width:14.3%"></i></span><span class="vl">11.6 万</span></div>
+      <div class="sbar"><span class="lb">海光</span><span class="tr"><i class="fl" style="width:10.2%"></i></span><span class="vl">8.25 万</span></div>
+    </div>
+    <div class="grid g3" style="margin-top:1.1rem">
+      <div class="card hl"><div class="k">国产合计占比</div><div class="v">40%+</div><div class="d">首次突破四成</div></div>
+      <div class="card"><div class="k">华为占整体市场</div><div class="v">20.3%</div><div class="d">占国产份额近一半</div></div>
+      <div class="card"><div class="k">供给卡点</div><div class="v">晶圆/HBM</div><div class="d">先进封装，预计 2027 起缓解</div></div>
+    </div>
+    <div class="note warn"><span class="t">⚠</span>口径提示：以上为<b>投研机构测算</b>（选股通 / 新投研 09-06），非厂商官方披露，仅作趋势参考。</div>
+  </div></div>
+</section>
+
+<!-- ========= 10 算力② 超节点 ========= -->
+<section class="slide" data-tone="chip">
+  <div class="eyebrow"><span class="sec">五 · 算力 ②</span><span>国联民生 09-10 / 寒武纪半年报</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>超节点时代：单卡受限，用集群互联补代差</h2>
+    <div class="sub">Atlas 950 AI 超节点 · 统一内存编址把战场升维到 8192 卡</div>
+    <div class="grid g4" style="margin-top:.6rem">
+      <div class="card hl"><div class="k">搭载芯片</div><div class="v">8192 颗</div><div class="d">Ascend 950DT</div></div>
+      <div class="card"><div class="k">FP8 总算力</div><div class="v">8 EFLOPS</div><div class="d">灵衢 2.0 互联协议</div></div>
+      <div class="card"><div class="k">总互联带宽</div><div class="v">16.3 PB/s</div><div class="d">Scale-out 至数十万卡级</div></div>
+      <div class="card"><div class="k">DeepSeek V4 加速</div><div class="v up">1.5–1.96×</div><div class="d">昇腾与英伟达双平台验证</div></div>
+    </div>
+    <h3>寒武纪 2026 上半年（连续第七季盈利）</h3>
+    <div class="bars" style="margin:0">
+      <div class="bar"><span class="lb">扣非归母净利</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:50%"></i></span><span class="vl up">+137.3%</span></div>
+      <div class="bar"><span class="lb">归母净利</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:44.7%"></i></span><span class="vl up">+122.6%</span></div>
+      <div class="bar"><span class="lb">营业收入</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:39.4%"></i></span><span class="vl up">+108.1%</span></div>
+    </div>
+    <div class="note"><span class="t">🔗</span>更硬的护城河：思元 690 对 DeepSeek V4 / 智谱 GLM-5 实现<b>"Day 0"级适配</b>——模型发布当天即完成芯片适配并开源代码。</div>
+  </div></div>
+</section>
+
+<!-- ========= 11 算力③ 供需与涨价 ========= -->
+<section class="slide" data-tone="chip">
+  <div class="eyebrow"><span class="sec">五 · 算力 ③</span><span>路透 09-10 / 厂商未证实</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>越缺越贵：需求暴涨 417%，有效供给只增 128%</h2>
+    <div class="sub">一季度同比口径 · 条长按 417% 归一化</div>
+    <div class="sbars" style="margin-top:.7rem">
+      <div class="sbar"><span class="lb">AI 算力需求</span><span class="tr"><i class="fl" style="width:100%"></i></span><span class="vl up">+417%</span></div>
+      <div class="sbar"><span class="lb">有效供给增速</span><span class="tr"><i class="fl" style="width:30.7%"></i></span><span class="vl">+128%</span></div>
+    </div>
+    <div class="grid g3" style="margin-top:1rem">
+      <div class="card hl"><div class="k">昇腾 950DT 意向报价</div><div class="v up">25 万元+</div><div class="d">较两月前上涨 20%–50%</div></div>
+      <div class="card"><div class="k">昇腾 950PR</div><div class="v">6 万 → 8 万</div><div class="d">年初至今（元/张）</div></div>
+      <div class="card"><div class="k">老款 910C 板卡</div><div class="v">9 万 → 11 万+</div><div class="d">同步上行（元/张）</div></div>
+    </div>
+    <div class="note warn"><span class="t">⚠</span>口径提示：涨价消息出自<b>路透社援引三名知情人士</b>；寒武纪当日回应财联社"<b>并未发布涨价相关消息</b>"。两说并存，<b>未经官方确认</b>。</div>
+  </div></div>
+</section>
+
+<!-- ========= 12 资本① 智谱 ========= -->
+<section class="slide" data-tone="capital">
+  <div class="eyebrow"><span class="sec">六 · 资本 ①</span><span>09-13 公告</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>智谱完成约 50 亿美元融资，两个月内第二次大额募资</h2>
+    <div class="sub">配售 20 亿美元 + 零息可转债 30 亿美元 · 上市后累计净募约 745 亿港元</div>
+    <div class="grid g4" style="margin-top:.6rem">
+      <div class="card hl"><div class="k">配售价</div><div class="v">714 港元</div><div class="d">较前收盘 793 港元折让 9.96%</div></div>
+      <div class="card"><div class="k">可转债换股价</div><div class="v">892.5 港元</div><div class="d">较前收盘溢价 12.55%</div></div>
+      <div class="card"><div class="k">MaaS 收入（H1）</div><div class="v up">+2736%</div><div class="d">8.25 亿元，占总收入 86.5%</div></div>
+      <div class="card"><div class="k">ARR（8 月底）</div><div class="v">16 亿美元</div><div class="d">较 7 月上旬 10 亿美元 +60%</div></div>
+    </div>
+    <div class="bars" style="margin-top:1rem">
+      <div class="bar"><span class="lb">Token 调用量</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:50%"></i></span><span class="vl up">较年初 +40 倍</span></div>
+      <div class="bar"><span class="lb">API 均价</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:25.3%"></i></span><span class="vl up">+101%</span></div>
+      <div class="bar"><span class="lb">开放平台毛利率</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:12.3%"></i></span><span class="vl up">-0.4% → 24.6%</span></div>
+      <div class="bar"><span class="lb">9/14 股价（收盘）</span><span class="tr"><i class="mid"></i><i class="fl d" style="width:4.5%"></i></span><span class="vl down">-9.08%</span></div>
+    </div>
+    <div class="note warn"><span class="t">⚠</span>市场用脚投票：9/14 盘中最低 710 港元<b>跌破 714 配售价</b>，较 6 月高点回撤<b>超 75%</b>；H1 仍亏损 20.72 亿元。</div>
+  </div></div>
+</section>
+
+<!-- ========= 13 资本② IPO ========= -->
+<section class="slide" data-tone="capital">
+  <div class="eyebrow"><span class="sec">六 · 资本 ②</span><span>IPO 与二级市场</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>IPO 潮起：从"讲故事"到要看业绩</h2>
+    <div class="sub">芯片四小龙集齐资本市场 · 大模型公司回 A 与赴港并行</div>
+    <table style="margin-top:.5rem">
+      <thead><tr><th>公司</th><th>进展</th><th>关键数据</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td>燧原科技</td><td>09-11 登陆科创板</td><td>发行价 142.18 元，开盘 +188.37%</td><td class="up">市值超 1700 亿</td></tr>
+        <tr><td>DeepSeek</td><td>聘中信证券筹备科创板 IPO</td><td>市场传闻估值约 5000 亿元</td><td>未官方回应</td></tr>
+        <tr><td>月之暗面</td><td>完成股改（有限责任公司→股份公司）</td><td>被视为上市前置信号</td><td>赴港传闻未证实</td></tr>
+        <tr><td>智谱</td><td>6 月启动"回 A"二次上市筹备</td><td>拟募资约 150 亿元</td><td>推进中</td></tr>
+        <tr><td>MiniMax</td><td>5/29 启动 A 股 IPO 进程</td><td>7 月完成约 20 亿美元再融资</td><td>股价较高点 -85%+</td></tr>
+      </tbody>
+    </table>
+    <div class="bars" style="margin-top:.9rem">
+      <div class="bar"><span class="lb">燧原（首日）</span><span class="tr"><i class="mid"></i><i class="fl u" style="width:50%"></i></span><span class="vl up">+188.4%</span></div>
+      <div class="bar"><span class="lb">智谱（较 6 月高点）</span><span class="tr"><i class="mid"></i><i class="fl d" style="width:19.9%"></i></span><span class="vl down">-75%+</span></div>
+      <div class="bar"><span class="lb">MiniMax（较高点）</span><span class="tr"><i class="mid"></i><i class="fl d" style="width:22.6%"></i></span><span class="vl down">-85%+</span></div>
+    </div>
+    <div class="note"><span class="t">📉</span>冷思考：已上市国产 AI 芯片公司股价普遍较年内高点<b>回撤四五成</b>；资本开始用"业绩兑现"而非"AGI 叙事"定价。</div>
+  </div></div>
+</section>
+
+<!-- ========= 14 治理 ========= -->
+<section class="slide" data-tone="gov">
+  <div class="eyebrow"><span class="sec">七 · 治理</span><span>09-07 最高法 / 09-14 网安标委</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>治理双落地：司法划红线，安全框架升 3.0</h2>
+    <div class="sub">发展与安全并重 —— 该保护的坚决保护、该包容的适度包容</div>
+    <div class="grid g2" style="margin-top:.7rem">
+      <div class="card hl">
+        <h4>⚖ 最高法《关于依法审理涉人工智能纠纷案件的意见》</h4>
+        <ul>
+          <li><b>我国首部</b>涉 AI 司法裁判规则文件，5 部分 24 条</li>
+          <li>未经同意用 AI 生成他人肖像 / 声音虚拟形象 → <b>构成人格权侵权</b></li>
+          <li>"内容由 AI 生成"<b>不能作为免责抗辩</b></li>
+          <li>大数据杀熟、仿冒名人带货 → 承担侵权 / 惩罚性赔偿责任</li>
+          <li>模型训练合理处理已公开个人信息，未明确拒绝的<b>一般不认定侵权</b></li>
+        </ul>
+      </div>
+      <div>
+        <div class="card">
+          <h4>🛡 《人工智能安全治理框架 3.0》</h4>
+          <p style="margin-top:.3rem">09-14 在 <b>2026 年国家网络安全宣传周</b>开幕式发布；延续"风险分类、技术应对、综合治理"核心逻辑，更新风险分类与技术应对措施。</p>
+        </div>
+        <div class="tl" style="margin-top:1rem">
+          <div class="tli"><div class="dot">1.0</div><div class="tt">2024</div><div class="td">首次发布<br>建立风险分类</div></div>
+          <div class="tli"><div class="dot">2.0</div><div class="tt">2025</div><div class="td">技术应对<br>与综合治理</div></div>
+          <div class="tli"><div class="dot">3.0</div><div class="tt">2026</div><div class="td">更新风险分类<br>应对智能体新风险</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="note"><span class="t">⚖</span>取向明确：司法要做"<b>安全带</b>"而不是"绊脚石"——既反对过度严苛挫伤创新，也反对借"技术中立"推诿责任。</div>
+  </div></div>
+</section>
+
+<!-- ========= 15 国际与总结 ========= -->
+<section class="slide" data-tone="world">
+  <div class="eyebrow"><span class="sec">八 · 国际与总结</span><span>蒸馏之争 · 四条主线</span></div>
+  <div class="wrap"><div class="zin">
+    <h2><span class="bar"></span>国际博弈：管制从芯片 → 权重 → 对话，一步比一步靠内</h2>
+    <div class="grid g3" style="margin-top:.5rem">
+      <div class="card hl"><div class="k">09-08 美方动作</div><div class="v">6 家</div><div class="d">NSA/CISA/FBI 联合公告 AA26-251A 点名</div></div>
+      <div class="card"><div class="k">09-09 商务部回应</div><div class="v">坚决反对</div><div class="d">"于事无凭、于法无据"，将坚决反制</div></div>
+      <div class="card"><div class="k">09-06 新规传闻</div><div class="v">第三国</div><div class="d">拟限制远程调用境外 AI 服务器</div></div>
+    </div>
+    <div class="grid g2" style="margin-top:.9rem">
+      <div class="card">
+        <h4>四条主线（近 14 天）</h4>
+        <ul>
+          <li><b>政策</b>：3 项部级文件连发，从扶大厂转向扶生态、扶落地</li>
+          <li><b>模型</b>：DeepSeek / 豆包引领，成本与 Agent 能力双线竞速</li>
+          <li><b>算力</b>：超节点 + Day 0 适配，国产闭环成型但供给仍紧</li>
+          <li><b>资本</b>：融资与 IPO 并进，估值逻辑正从叙事切向业绩</li>
+        </ul>
+      </div>
+      <div class="card warn" style="border-color:#ff8a65">
+        <h4 style="color:#ff8a65">需持续跟踪</h4>
+        <ul>
+          <li>涨价传闻<b>未经官方确认</b>，供需缺口是否延续</li>
+          <li>美方是否将蒸馏指控转化为实体清单或出口管制</li>
+          <li>芯片出货占比为<b>投研测算</b>，待厂商披露验证</li>
+          <li>智谱等股价与配售价倒挂，融资窗口是否收紧</li>
+        </ul>
+      </div>
+    </div>
+    <div class="note"><span class="t">🎯</span>一句话结论：<b>封堵每收紧一格，国产模型与算力就被往前推一格</b>；但下一阶段的胜负手，在落地效率与成本控制。</div>
+  </div></div>
+</section>
+
+</div>
+<div id="nav">
+  <div class="btn" id="prev">‹</div>
+  <div class="btn" id="next">›</div>
+  <div id="bar"><div id="barin"></div></div>
+  <div id="pg">1 / 15</div>
+  <div id="ver">v1.2</div>
+</div>
+<div id="ovl"></div>
+<!-- GOTO:HTML 起 -->
+<div id="goto"><div id="gbox">
+  <div id="gtop"><span>跳转到指定页 · 共 <b id="gtot">1</b> 页</span><span>← → 微调　Enter 跳转　Esc 关闭</span></div>
+  <input id="gin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="输入页码后按 Enter">
+  <div id="gpg"></div>
+  <div id="gprev"></div>
+  <div id="ghint">快捷键　<code>G</code> 打开跳页　<code>0-9</code> 直接输页码　<code>O</code> 概览　<code>F</code> 全屏　<code>Home/End</code> 首末页</div>
+</div></div>
+<div id="gquick"><div class="q">1</div><small>继续输入多位页码 · Enter 立即跳转</small></div>
+<!-- GOTO:HTML 止 -->
+</div>
+<script>
+(function(){
+  var deck=document.getElementById('deck');
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var i=0,n=slides.length;
+  var barin=document.getElementById('barin'),pg=document.getElementById('pg'),ovl=document.getElementById('ovl');
+
+  /* 画布整体等比缩放 */
+  function fitDeck(){
+    var s=Math.min(window.innerWidth/1600, window.innerHeight/900);
+    deck.style.transform='scale('+s+')';
+  }
+
+  /* 每页内容自动缩放填满 —— 居中 scale 方案（上下/左右均居中，绝不裁切）
+     原理：.zin 置于 .wrap(flex,align+justify:center) 中；
+     把 .zin 的布局宽度设为 100/k %，再 transform:scale(k)（origin:center）
+     → 渲染宽度恒 = 容器宽（左右居中），渲染高度 = 布局高 × k。
+     迭代求解 k 使渲染高 = 可用高，上限 data-cap（默认 1.24）。
+     所有测量用 getBoundingClientRect 并除以 deck 缩放归一回画布坐标。 */
+  function applyK(zin,k){
+    if(k>0.997&&k<1.003){ zin.style.width='100%'; zin.style.transform='none'; return 1; }
+    zin.style.width=(100/k)+'%';
+    zin.style.transform='scale('+k+')';
+    return k;
+  }
+  function fitSlide(s){
+    var zin=s.querySelector('.zin'), wrap=s.querySelector('.wrap');
+    if(!zin||!wrap)return;
+    zin.style.width='100%'; zin.style.transform='none';
+    var dscale=deck.getBoundingClientRect().height/900;
+    if(!dscale||!isFinite(dscale))dscale=1;
+    var ah=wrap.clientHeight;
+    if(!ah)return;
+    var cap=parseFloat(zin.getAttribute('data-cap')||'1.24');
+    var k=1;
+    for(var t=0;t<6;t++){                    /* 收敛迭代：以实际渲染高为准 */
+      var hr=zin.getBoundingClientRect().height/dscale;
+      if(!hr||!isFinite(hr))return;
+      var kn=k*ah/hr;
+      if(!isFinite(kn)||kn<=0)return;
+      kn=Math.max(0.45,Math.min(kn,cap));
+      if(Math.abs(kn-k)<0.004){k=kn;break;}
+      k=kn; applyK(zin,k);
+    }
+    /* 收尾保险：若仍有溢出，一次性压到恰好容纳 */
+    var hf=zin.getBoundingClientRect().height/dscale;
+    if(hf>ah*1.004&&hf>0){ k=Math.max(0.45,k*ah/hf); applyK(zin,k); }
+  }
+  function fitAll(){
+    fitDeck();
+    slides.forEach(fitSlide);
+  }
+
+  slides.forEach(function(s,idx){
+    var d=document.createElement('div');d.className='mini';
+    var t=s.querySelector('h2')||s.querySelector('h1'),sub=s.querySelector('.sub');
+    d.innerHTML='<b>'+(idx+1)+'</b>'+((t&&t.textContent.trim())||'封面').slice(0,22)
+      +(sub?'<br><span style="opacity:.7">'+sub.textContent.trim().slice(0,26)+'</span>':'');
+    d.onclick=function(){go(idx);toggleOvl(false);};
+    ovl.appendChild(d);
+  });
+
+  function go(k){
+    i=Math.max(0,Math.min(n-1,k));
+    slides.forEach(function(s,idx){s.classList.toggle('active',idx===i);});
+    barin.style.width=((i+1)/n*100)+'%';
+    pg.textContent=(i+1)+' / '+n;
+    [].slice.call(ovl.children).forEach(function(m,idx){m.classList.toggle('cur',idx===i);});
+    if(location.hash!=='#'+(i+1))history.replaceState(null,'','#'+(i+1));
+  }
+  function toggleOvl(on){ovl.classList.toggle('on',(on===undefined)?!ovl.classList.contains('on'):on);}
+
+  /* GOTO:JS 起 —— 指定页码跳转（G 键 / 点击底部页码 / 直接键数字） */
+  var gto=document.getElementById('goto'),gin=document.getElementById('gin'),
+      gpg=document.getElementById('gpg'),gprev=document.getElementById('gprev'),
+      gqt=document.getElementById('gquick'),gq=document.querySelector('#gquick .q'),
+      gtot=document.getElementById('gtot');
+  var titles=slides.map(function(s){
+    var t=s.querySelector('h2')||s.querySelector('h1');
+    return t?(t.textContent.trim().replace(/\s+/g,' ').slice(0,32)):'封面';
+  });
+  gtot.textContent=n;
+  slides.forEach(function(s,idx){
+    var d=document.createElement('div');d.className='gn';d.textContent=(idx+1);
+    d.title=(idx+1)+' · '+titles[idx];
+    d.onclick=function(e){e.stopPropagation();go(idx);toggleGoto(false);};
+    gpg.appendChild(d);
+  });
+  function preview(v){
+    var k=Math.max(1,Math.min(n,parseInt(v,10)||1));
+    gprev.innerHTML='<b>'+k+'</b>'+titles[k-1];
+    [].slice.call(gpg.children).forEach(function(m,idx){m.classList.toggle('cur',idx===k-1);});
+  }
+  function toggleGoto(on){
+    var will=(on===undefined)?!gto.classList.contains('on'):on;
+    if(will)ovl.classList.remove('on');
+    gto.classList.toggle('on',will);
+    if(will){gin.value=String(i+1);preview(i+1);setTimeout(function(){try{gin.focus();gin.select();}catch(err){}},20);}
+    else{try{gin.blur();}catch(err){}}
+  }
+  var qbuf='',qtimer=null;
+  function quickHide(){gqt.classList.remove('on');clearTimeout(qtimer);}
+  function quickPush(d){
+    if(qbuf===''&&d==='0')return;
+    var cand=(qbuf==='')?d:(qbuf+d),v=parseInt(cand,10);
+    if(v>n){v=parseInt(d,10);if(v>n||v<1){quickHide();qbuf='';return;}qbuf=d;}
+    else{qbuf=cand;}
+    gq.textContent=qbuf+' / '+n;
+    gqt.classList.add('on');
+    clearTimeout(qtimer);
+    var tgt=parseInt(qbuf,10);
+    qtimer=setTimeout(function(){go(tgt-1);qbuf='';quickHide();},1000);
+  }
+  gin.addEventListener('input',function(){preview(gin.value);});
+  gto.addEventListener('click',function(e){if(e.target===gto)toggleGoto(false);});
+  pg.style.cursor='pointer';pg.title='点击跳转到指定页（快捷键 G）';
+  pg.addEventListener('click',function(e){e.stopPropagation();toggleGoto(true);});
+  /* GOTO:JS 止 */
+
+  document.addEventListener('keydown',function(e){
+    if(gto.classList.contains('on')){
+      if(e.key==='Escape'){e.preventDefault();toggleGoto(false);}
+      else if(e.key==='Enter'){e.preventDefault();var gv=parseInt(gin.value,10);if(!isNaN(gv)){go(gv-1);toggleGoto(false);}}
+      else if(e.key==='ArrowRight'||e.key==='ArrowDown'){e.preventDefault();gin.value=String(Math.min(n,i+2));preview(i+2);}
+      else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();gin.value=String(Math.max(1,i));preview(i);}
+      return;
+    }
+    if(/^[0-9]$/.test(e.key)&&!e.ctrlKey&&!e.metaKey&&!e.altKey){e.preventDefault();quickPush(e.key);return;}
+    if(e.key==='g'||e.key==='G'){e.preventDefault();toggleGoto(true);return;}
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(i+1);}
+    else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(i-1);}
+    else if(e.key==='Home'){go(0);}
+    else if(e.key==='End'){go(n-1);}
+    else if(e.key==='o'||e.key==='O'){toggleGoto(false);toggleOvl();}
+    else if(e.key==='f'||e.key==='F'){
+      if(!document.fullscreenElement){document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();}
+      else{document.exitFullscreen&&document.exitFullscreen();}}
+    else if(e.key==='Escape'){toggleOvl(false);}
+  });
+  document.getElementById('next').onclick=function(e){e.stopPropagation();go(i+1);};
+  document.getElementById('prev').onclick=function(e){e.stopPropagation();go(i-1);};
+  document.getElementById('stage').addEventListener('click',function(e){
+    if(ovl.classList.contains('on')||gto.classList.contains('on'))return;
+    if(e.target.closest('.btn'))return;
+    if(window.getSelection().toString())return;
+    go(i+1);
+  });
+  var x0=null;
+  document.addEventListener('touchstart',function(e){x0=e.touches[0].clientX;},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(x0===null)return;var dx=e.changedTouches[0].clientX-x0;
+    if(Math.abs(dx)>50){go(dx<0?i+1:i-1);}x0=null;},{passive:true});
+
+  var h=parseInt((location.hash||'').replace('#',''),10);
+  go(isNaN(h)?0:h-1);
+  fitAll();
+  window.addEventListener('resize',fitAll);
+  if(document.fonts&&document.fonts.ready){document.fonts.ready.then(fitAll);}
+  setTimeout(fitAll,150);
+})();
+</script>
+</body>
+</html>
